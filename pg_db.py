@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 import psycopg2
 from psycopg2 import pool
-from psycopg2.extensions import make_dsn
+from psycopg2.extras import execute_values
 import configparser
 import logging
 import time, os, re, datetime
@@ -53,6 +53,16 @@ class pgproces():
     #        logger.info('reconnect sucess')
     #    except:
     #        logger.error('reconnect failed ')
+
+    def dbexec_values(self, commd, value):
+        try:
+            execute_values(self._cur, commd, value)
+            self.pg_conn.commit()
+            if commd.strip().lower().startswith('select'):
+                return self._cur.fetchall()
+        except Exception as e:
+            logger.error('commd:{0},[{1}]'.format(commd, e))
+
 
     def dbexec(self, commd, value):
         try:
@@ -126,7 +136,8 @@ if __name__ == "__main__":
 
     db = pgproces(dbname, user, password, host, port)
     #sqllist = []
-    #rtpsql = 'SELECT * from t_rtp_report;'
+    rtpsql_sel = 'SELECT * from t_rtp_report;'
+    rtpsql = "INSERT into t_rtp_report(pcap_time,srcip) VALUES (to_date(:1,\'YYYYMMDDHH24MISS\',:2)"
     #a = db.dbexec(rtpsql, None)
     #print(a)
 
@@ -142,9 +153,9 @@ if __name__ == "__main__":
                 b = tuple(a)
                 sqllist.append(b)
             print(sqllist)
-            cur = 
-            execute_values("INSERT into t_rtp_report(pcap_time,srcip) VALUES(to_date('2018-02-16 11:00:00', 'YYYY-MM-DD HH24:MI:SS'), '192.168.0.1');")
-            #db.dbexecmany(rtpsql, sqllist)
+            db.dbexec_values(rtpsql, sqllist)
+            a = db.dbexec(rtpsql_sel)
+            print(a)
             #sqllist = []
             #cmd = ("move {0} {1}".format(sfile, bak_dir_day))
             #print(cmd)
