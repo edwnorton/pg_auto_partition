@@ -74,52 +74,21 @@ class pgproces():
                 self.pg_conn.commit()
             if commd.strip().lower().startswith('select'):
                 return self._cur.fetchall()
-        #except cx_Oracle.DatabaseError as exc:
-        #    error, = exc.args
-        #    if int(error.code) == 3114 or int(error.code) == 3113:
-        #        while self.connectstat:
-        #            self.connectstat = False
-        #            logger.error('reconnect retry ')
-        #            self.reconnect()
-        #            if self.connectstat:
-        #                if value == None:
-        #                    self._cur.execute(commd)
-        #                    self._oraconn.commit()
-        #                else:
-        #                    self._cur.execute(commd, value)
-        #                    self._oraconn.commit()
-        #                return self._cur.fetchall()
-        #            time.sleep(3)
         except Exception as e:
             logger.error('commd:{0},[{1}]'.format(commd, e))
-    #def dbexecmany(self, sql, valuelist):
-    #    try:
-    #        self.valuelist = valuelist
-    #        self._cur.prepare(sql)
-    #        self._cur.executemany(sql, valuelist)
-    #        self._oraconn.commit()
-    #        #self._cur.close()
-    #        logger.debug('inert urs_event count {0}'.format(len(self.valuelist)))
-    #        return True
-    #        #if commd.strip().lower().startswith('select'):
-    #        #    return self._cur.fetchall()
-    #    except cx_Oracle.DatabaseError as exc:
-    #        error, = exc.args
-    #        if int(error.code) == 3114 or int(error.code) == 3113:
-    #            while self.connectstat:
-    #                self.connectstat = False
-    #                logger.error('reconnect retry ')
-    #                self.reconnect()
-    #                if self.connectstat:
-    #                    self.valuelist = valuelist
-    #                    self._cur.prepare(sql)
-    #                    self._cur.executemany(sql, valuelist)
-    #                    self._oraconn.commit()
-    #                    return True
-    #                time.sleep(3)
-    #    except Exception as e:
-    #        logger.error(e)
-    #        return False
+
+
+    def dbexecmany(self, sql, valuelist):
+        try:
+            self.valuelist = valuelist
+            self._cur.executemany(sql, valuelist)
+            self.pg_conn.commit()
+            #self._cur.close()
+            logger.debug('inert urs_event count {0}'.format(len(self.valuelist)))
+            return True
+        except Exception as e:
+            logger.error(e)
+            return False
 
 
 
@@ -137,7 +106,7 @@ if __name__ == "__main__":
     db = pgproces(dbname, user, password, host, port)
     #sqllist = []
     rtpsql_sel = 'SELECT * from t_rtp_report;'
-    rtpsql = "INSERT into t_rtp_report(pcap_time,srcip) VALUES (to_date(:1,\'YYYYMMDDHH24MISS\',:2)"
+    rtpsql = "INSERT into t_rtp_report(pcap_time,srcip) VALUES(to_date(%s,\'YYYYMMDDHH24MISS\'),%s)"
     #a = db.dbexec(rtpsql, None)
     #print(a)
 
@@ -153,8 +122,9 @@ if __name__ == "__main__":
                 b = tuple(a)
                 sqllist.append(b)
             print(sqllist)
-            db.dbexec_values(rtpsql, sqllist)
-            a = db.dbexec(rtpsql_sel)
+            print(rtpsql)
+            db.dbexecmany(rtpsql, sqllist)
+            a = db.dbexec(rtpsql_sel, None)
             print(a)
             #sqllist = []
             #cmd = ("move {0} {1}".format(sfile, bak_dir_day))
